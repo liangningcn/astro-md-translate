@@ -1,0 +1,3 @@
+{
+  "items": "You have {count, plural, one {# item} other {# items}}"
+}

@@ -1,0 +1,69 @@
+{
+  "name": "astro-md-translate",
+  "version": "0.1.0",
+  "description": "Markdown & i18n JSON translation toolkit with format-protection pipelines and a pluggable translator provider.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "astro-md-translate": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm typecheck && pnpm build && pnpm test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "author": "liangningcn",
+  "packageManager": "pnpm@12.15.0",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/liangningcn/astro-md-translate.git"
+  },
+  "homepage": "https://github.com/liangningcn/astro-md-translate#readme",
+  "bugs": {
+    "url": "https://github.com/liangningcn/astro-md-translate/issues"
+  },
+  "keywords": [
+    "markdown",
+    "i18n",
+    "translation",
+    "astro",
+    "cli"
+  ],
+  "dependencies": {
+    "cac": "^6.7.14",
+    "gray-matter": "^4.0.3",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.2.0",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}

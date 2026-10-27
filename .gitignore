@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+
+# Lockfiles: only pnpm is used
+package-lock.json
+yarn.lock
+
+# Packed tarballs
+*.tgz
+
+# Local working notes (kept locally, never published/pushed)
+docs/backup/
