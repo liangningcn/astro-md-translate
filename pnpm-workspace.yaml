@@ -1,5 +1,9 @@
 packages:
-  - '*'
+  - '.'
 
-onlyBuiltDependencies:
-  - esbuild
+# pnpm >= 12.15 blocks dependency build scripts by default. esbuild's postinstall
+# must run, otherwise `pnpm build` (tsup) and vitest fail with
+# ERR_PNPM_IGNORED_BUILDS. In pnpm 12.15 the effective key is `allowBuilds`
+# (a mapping) — `onlyBuiltDependencies` is parsed but does not take effect.
+allowBuilds:
+  esbuild: true
