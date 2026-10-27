@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Aligns with the `engines.node` range declared in package.json.
+        node-version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reads the pnpm version from the `packageManager` field in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+
+      # Pack smoke test — A + B dual assertions:
+      #   A: the built CLI itself carries the shebang (read from the workspace).
+      #   B: that file (and the core entry) is in the tarball, and nothing else
+      #      leaks in (source, tests, docs, lockfiles).
+      # Together they are equivalent to "the packaged CLI starts with a shebang".
+      - name: Pack smoke test
+        run: |
+          node -e "
+          const { execSync } = require('node:child_process');
+          const { readFileSync } = require('node:fs');
+          const out = JSON.parse(execSync('pnpm pack --json', { encoding: 'utf8' }));
+          const paths = out.files.map((f) => f.path);
+          const fails = [];
+          const ok = (cond, msg, actual) => { if (!cond) fails.push(msg + ' (got: ' + actual + ')'); };
+          const head = paths.slice(0, 10).join(', ');
+          const A = readFileSync('dist/cli/index.js', 'utf8').split(/\r?\n/)[0];
+          ok(A === '#!/usr/bin/env node', 'A: dist/cli/index.js first line is not the shebang', JSON.stringify(A));
+          ok(paths.includes('dist/cli/index.js'), 'B: dist/cli/index.js missing from tarball', head);
+          ok(paths.includes('dist/index.js'), 'B: dist/index.js missing from tarball', head);
+          ok(paths.includes('dist/index.d.ts'), 'B: dist/index.d.ts missing from tarball', head);
+          ok(paths.includes('package.json'), 'B: package.json missing from tarball', head);
+          for (const bad of ['src/', 'test/', 'docs/']) {
+            const hit = paths.filter((p) => p.startsWith(bad));
+            ok(hit.length === 0, 'B: unexpected tarball entry under ' + bad, hit.join(', ') || 'none');
+          }
+          for (const lock of ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']) {
+            ok(!paths.includes(lock), 'B: lockfile leaked into tarball: ' + lock, paths.includes(lock) ? lock : 'absent');
+          }
+          if (fails.length > 0) {
+            console.error('FAIL:\n  - ' + fails.join('\n  - '));
+            console.error('all paths (' + paths.length + ', first 10): ' + head);
+            process.exit(1);
+          }
+          console.log('pack smoke OK (' + paths.length + ' entries): ' + paths.join(', '));
+          "
